@@ -57,7 +57,7 @@ p {
     background-color: #555;
 }
 
-/* Position Spotify Player in the Bottom Right */
+/* Correct Positioning of Spotify Player in the Bottom Right */
 #spotify-player {
     position: fixed;
     bottom: 10px;
@@ -65,4 +65,5 @@ p {
     width: 300px;
     height: 80px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    z-index: 1000; /* Ensure it stays above other content */
 }
