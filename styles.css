@@ -12,11 +12,48 @@ body {
     overflow: hidden;
 }
 
-.container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
+/* Background Decorations */
+.background-shapes .shape {
+    position: absolute;
+    border-radius: 50%;
+    opacity: 0.15;
+    animation: floatShapes 20s infinite ease-in-out;
+}
+
+.shape1 {
+    width: 400px;
+    height: 400px;
+    background: linear-gradient(135deg, #ff6b6b, #f94f6f);
+    top: -100px;
+    left: -150px;
+}
+
+.shape2 {
+    width: 500px;
+    height: 500px;
+    background: linear-gradient(135deg, #9b51e0, #7d3cc5);
+    bottom: -150px;
+    right: -150px;
+}
+
+.shape3 {
+    width: 300px;
+    height: 300px;
+    background: linear-gradient(135deg, #ffe259, #ffa751);
+    bottom: 150px;
+    left: -100px;
+}
+
+@keyframes floatShapes {
+    0% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(30px);
+    }
+    100% {
+        transform: translateY(0);
+    }
 }
 
 /* Card Design */
@@ -29,6 +66,7 @@ body {
     width: 350px;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
     transition: transform 0.3s ease, box-shadow 0.3s ease;
+    z-index: 10; /* Stay above background shapes */
 }
 
 .card:hover {
@@ -59,6 +97,11 @@ body {
 }
 
 /* Text Design */
+h1, p {
+    opacity: 0;
+    animation: fadeIn 1.5s ease-in-out forwards;
+}
+
 h1 {
     font-size: 30px;
     margin-bottom: 10px;
@@ -69,6 +112,15 @@ p {
     margin-bottom: 30px;
     font-size: 16px;
     color: #ccc;
+}
+
+@keyframes fadeIn {
+    0% {
+        opacity: 0;
+    }
+    100% {
+        opacity: 1;
+    }
 }
 
 /* Button Design */
@@ -93,7 +145,24 @@ p {
     transform: scale(1.1);
 }
 
-/* Correct Positioning of Spotify Player in the Bottom Right */
+.glow {
+    position: relative;
+}
+
+.glow:hover::after {
+    content: '';
+    position: absolute;
+    top: -5px;
+    left: -5px;
+    right: -5px;
+    bottom: -5px;
+    border-radius: 15px;
+    background: rgba(255, 255, 255, 0.3);
+    filter: blur(10px);
+    z-index: -1;
+}
+
+/* Spotify Player */
 #spotify-player {
     position: fixed;
     bottom: 15px;
@@ -104,7 +173,7 @@ p {
     z-index: 1000; /* Ensure it stays above other content */
 }
 
-/* Add subtle floating animation to the card */
+/* Floating Animation */
 @keyframes float {
     0% {
         transform: translateY(0px);
