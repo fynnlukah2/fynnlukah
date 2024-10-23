@@ -1,0 +1,708 @@
+
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <base href="https://lstsim.de/" />
+  <link type="text/css" href="style/jqueryui/jquery-ui.css" media="all" rel="stylesheet" />
+  <link type="text/css" href="style/game.css?t=1530450306" media="all" rel="stylesheet" />
+  <script type="text/javascript" src="assets/2ccf7d44895eb22c105559939cae0ee3.js"></script>
+  <script type="text/javascript" src="js/dispatch/70741.js"></script>
+  <title></title>
+<script>
+
+username = "fynnlukah";
+player_name = "fynnlukah";
+stats_id = "1292425";
+api_key = {"e":1730133055,"h":"2qaUjxB7ayOrHxd9eiWrdA"};
+token = "FX0X2lyqpBoG4h5n6OFg";
+world_start_time = new Date().getTime();
+
+</script>
+</head>
+<body>
+
+<div id="gradient">
+    <img src="gfx/gradient.png" class="stretch" alt="" />
+</div>
+
+<div id="loading">
+<p>Die Spieloberfläche wird geladen ...</p>
+<p>Sollte dieser Hinweis auch nach einigen Sekunden noch sichtbar sein, schlug vermultich
+etwas fehl. Bitte überprüfe, ob du die <a href="//wiki.lstsim.de/Systemvoraussetzungen">Systemvoraussetzungen</a> erfüllst.</p></p></div>
+
+<div class="containerbox" id="missionpanel">
+<div class="draghandle"></div>
+<div id="missionlist"><div class="tabs"></div></div>
+</div>
+
+<div class="containerbox" id="carpanel">
+    <div class="draghandle"></div>
+    <select id="sortcarsby" title="Sortierreihenfolge für Fahrzeuge">
+        <option value="1">Name</option>
+        <option value="2">Status, Name</option>
+        <option value="3">Status, Typ, Name</option>
+        <option value="4">Typ, Name</option>
+        <option value="5">Typ, Status, Name</option>
+    </select>
+    <div id="carlist"></div>
+    <div class="separator" style="background:black;height:3px"></div>
+    <div id="cardetails"></div>
+</div>
+
+<div class="containerbox" id="map_container">
+<div class="draghandle"></div>
+<div id="map_canvas"></div>
+</div>
+
+<div class="containerbox" id="logpanel">
+<div class="content">
+  <div class="topbar">
+    <div id="weather"></div>
+    <div id="clock"></div>
+  </div>
+  <div class="logcontainer">
+    <div class="interactions"></div>
+    <div class="logitems"></div>
+  </div>
+</div>
+</div>
+
+<div class="containerbox" id="phonepanel">
+<div class="content">
+  <div class="menu" style="float:right">
+    <ul>
+      <li id="speed_button">1x</li>
+      <li id="extra_button">Extra</li>
+      <li id="pause_button"><span class="shortcut">P</span>ause</li>
+    </ul>
+  </div>
+  <div class="menu">
+    <ul>
+      <li id="phonemenu" style="margin-left:0">Anrufen</li>
+      <li id="debugmenu" style="display:none">Debug</li>
+     </ul>
+  </div>
+  <div class="logcontainer">
+    <div class="interactions"></div>
+    <div class="logitems"></div>
+  </div>
+</div>
+</div>
+
+<div id="layout_lock"></div>
+
+<div id="fb-root"></div>
+
+<script type="text/html" id="tmpl_achievements_dialog">
+<div id="achievements_dialog">
+
+<%
+if (achievements.length) {
+%><div id="achievements"><%
+    for (var i = 0; i < achievements.length; i++) {
+        var classes = ["achievement"];
+        
+        if (!achievements[i].shown)
+            classes.push("new");
+        
+        classes = classes.join(" ");
+        
+        %>
+<div class="<%=classes%>">
+<h4><%=achievements[i].title%><%
+
+if (achievements[i].count > 1) {
+    print(" (" + achievements[i].count + "x)");
+}
+
+%></h4>
+<p class="desc"><%=achievements[i].desc%></p>
+</div>
+<%
+    }
+%></div><%
+} else {
+%>
+
+<p><em>Keine Errungenschaften in dieser Sitzung.</em></p>
+
+<%
+}
+%>
+
+</div>
+</script>
+<script type="text/html" id="tmpl_actionlog_window">
+<div class="actionlog" data-id="<%=id%>">
+<table>
+
+<%
+    for (var i = 0; i < log.length; i++) {
+        var item = log[i];
+        
+        %>
+<tr>
+  <td class="time"><%=item.time%></td>
+  <td class="message"><%=# item.message %></td>
+</tr>
+        <%
+    }
+%>
+
+</table>
+</div>
+</script>
+<script type="text/html" id="tmpl_assistance">
+<div class="assistance_request">
+<% if (show_distance) { %>
+    <div class="radius"><div class="slider"></div> Angezeigter Radius: <span class="radiusvalue"><%=radius%> km</span></div>
+<% } %>
+
+<table class="assistance_table">
+<%
+for (var i = 0; i < stations.length; i++) {
+    var visible = (
+        !show_distance
+        || stations[i].types.rth
+        || stations[i].distance <= radius
+    );
+    var style = [];
+    
+    if (!visible)
+        style.push("display:none");
+    
+%>
+<tr style="<%=style.join(";")%>" station="<%=i%>">
+  <th><%=stations[i].name%></th>
+  <% if (show_distance) { %> <td class="distance"><%=stations[i].distance%> km</td> <% } %>
+  <td><%
+    for (var type in stations[i].types) {
+        var amount = stations[i].types[type].length;
+        var button_attr = [
+            "type=\"button\"",
+            "cartype=\"" + type.toLowerCase() + "\""
+        ];
+        
+        if (!amount) {
+            button_attr.push("disabled=\"disabled\"");
+        }
+        
+        %>
+        <button <%=#button_attr.join(" ")%>>
+            <span class="amount"><%=amount%></span>
+            <span class="log_car_type_<%=type.toLowerCase()%>">
+                <%=type.toUpperCase()%>
+            </span>
+        </button>
+        <%
+    }
+  %></td>
+</tr>
+<%
+}
+%>
+</table>
+
+<div class="selection" style="margin:0.6em 0">
+Ausgewählt:
+<div class="cars"></div>
+</div>
+
+<div style="margin:0.6em 0">
+  <button class="confirm" type="button">OK</button>
+  <button class="cancel" type="button">Abbrechen</button>
+</div>
+</div>
+</script>
+<script type="text/html" id="tmpl_car_panel">
+<h3 data-car="<%=id%>"<%
+    if (active)
+        print(" class=\"active\"");
+%>>
+
+<div class="container">
+
+<div class="status_row status_<%=status%>">
+<%
+    if (shift_times_exceeded) {
+%>
+        <div class="shift_times_exceeded" alt="Dienstzeitüberschreitung" title="Dienstzeitüberschreitung"></div>
+<%
+    }   
+
+    if (command) {
+%>
+<span class="command"><%=command%></span> › 
+<%
+    }
+%>
+<span class="status"><%=status%></span>
+</div>
+
+<%
+
+var style = "";
+
+if (out_of_lst_area) {
+    style = "text-decoration:line-through";
+}
+
+%>
+
+<span class="car log_car_type log_car_type_<%=type%>" style="<%=style%>"><%=name%></span>
+
+</div>
+</h3>
+</script>
+<script type="text/html" id="tmpl_mission_details">
+<p><strong>Einsatzort:</strong> <%=formatted_address%> </p>
+
+<% if (show_alarm_text) { %>
+<p><strong>Alarmierungstext:</strong> <%=#(alarm_text ? htmlspecialchars(alarm_text) : "<em>ohne</em>")%></p>
+<% } %>
+
+<p><div><strong>Zugewiesene Fahrzeuge</strong>:</div>
+
+<% if (assigned_cars.length) {
+    for (var i = 0; i < assigned_cars.length; i++) {
+        with (assigned_cars[i]) {
+            var name_style = "";
+            
+            if (out_of_lst_area) {
+                name_style = "text-decoration:line-through";
+            }
+%>
+
+<div class="patient_row">
+
+<% if (!no_status) { %>
+    <div class="status_row status_<%=status%>">
+        <div class="status"><%=status%></div>
+    </div>
+<% } %>
+
+<span class="log_car_type log_car_type_<%=type%> car_name" style="<%=name_style%>" data-car="<%=id%>"><%=name%></span>
+
+<% if (patient) { %>
+    →&nbsp;<em>Pat.&nbsp;<% print(patient);
+        
+        if (patient_ambulant)
+            print(" &amp; <abbr title=\"Ambulante Erstversorgung\">" + patient_ambulant + "</abbr/>");
+        
+        print("</em>");
+        
+        if (patient_destination)
+            print(" →&nbsp;" + patient_destination);
+        %>
+<% } else if (triagist) { %>
+    → <em>Sichtung</em>
+<% } %>
+
+</div>
+
+<%      }
+    }
+} else { %>
+
+<div><em>keine</em></div>
+
+<% } %>
+
+<%=#best_desc%>
+
+</p>
+</script>
+<script type="text/html" id="tmpl_mission_edit">
+<div class="dialog">
+<style type="text/css">
+.dialog .desc_title {
+    float:left;
+    margin-top:0.7em;
+}
+
+.dialog .desc_input {
+    margin-left:12em;
+}
+
+.dialog .ui-autocomplete-input {
+    width:400px;
+}
+
+.dialog .picker {
+    float:right;
+    margin-top:0.5em;
+}
+
+.dialog .picker h4 {
+    font-size:0.85em;
+    margin:0;
+    margin-top:0.5em;
+}
+
+.dialog .picker .confirm {
+    float:right;
+    font-size:0.8em;
+}
+</style>
+
+<% var ti = 1; %>
+
+<p><strong>Einsatzort:</strong> <% if (on_island) print("&nbsp;<img src='gfx/island.png' title='Einsatzort ist auf einer Insel' />&nbsp;"); %> <%=formatted_address%></p>
+
+<p style="margin-top:0.5em"><label>
+<input<% if (signal) print(" checked='checked'"); %> class="signal" shortcut="S" tabindex="<%=ti++%>" type="checkbox" /> <span class="shortcut">S</span>ignalanfahrt</label></p>
+
+<div class="keyword">
+<%
+    for (var i = 0; i < keywordCategories.length; i++) {
+        var category = keywordCategories[i]; %>
+<div class="desc_title"><%=category.name%>:</div>
+<div class="desc_input">
+  <select tabindex="<%=ti++%>" data-id="<%=category.id%>"><option></option><%
+        for (var j = 0; j < category.keywords.length; j++) {
+            var keyword = category.keywords[j];
+            var selected = keyword_set[category.id] && keyword_set[category.id].id === keyword.id;
+            var name = [];
+            
+            if (keyword.nameAbbr) {
+                name.push(keyword.nameAbbr);
+            }
+            
+            if (keyword.name) {
+                name.push(keyword.name);
+            }
+            
+            name = name.join(" – ");
+            %>
+            <option<%=selected ? " selected='selected'" : ""%> value="<%=keyword.id%>"><%=name%></option>
+            <%
+        }
+        
+  %></select>
+</div>
+    <%
+    ti += 1;
+    } %>
+</div>
+
+
+
+<div style="clear:both"></div>
+
+<div class="picker">
+  <h4>Schnellwahl nach Fahrzeugtyp:</h4>
+  <div class="buttons">
+    <button shortcut="E" tabindex="<%=ti++%>" type="button"><span class="shortcut">E</span>gal</button>
+    <button shortcut="K" car="ktw" tabindex="<%=ti++%>" type="button"><span class="log_car_type_ktw"><span class="shortcut">K</span>TW</span></button>
+    <button shortcut="R" car="rtw" tabindex="<%=ti++%>" type="button"><span class="log_car_type_rtw"><span class="shortcut">R</span>TW</span></button>
+    <button shortcut="N" car="na" tabindex="<%=ti++%>" type="button"><span class="log_car_type_nef"><span class="shortcut">N</span>A</span></button>
+  </div>
+  <div class="selection" style="display:none">
+    <h4>AAO-Vorschlag:</h4>
+    <div class="confirm">
+      <button shortcut="O" action="ok" tabindex="<%=ti++%>" type="button"><span class="shortcut">O</span>K</button>
+      <button shortcut="B" action="cancel" tabindex="<%=ti++%>" type="button">A<span class="shortcut">b</span>br.</button>
+    </div>
+    <span class="preview"></span>
+  </div>
+</div>
+
+<div style="margin-top:0.4em">
+<div class="desc_title">Abholzeit:</div>
+<div class="desc_input"><select class="pick_up_time" tabindex="<%=ti - 7%>" style="width:100px"><%=# get_time_select_html(pick_up_time) %></select>
+<span style="color:#AAA;font-size:0.8em">(optional)</span>
+</div>
+
+<div style="clear:left"></div>
+
+<p>
+<% if (fw_sent) { %>
+    <em>Feuerwehr ist bereits verständigt.</em>
+<% } else { %>
+    <label><input class="fw" shortcut="F" tabindex="<%=ti++%>" type="checkbox" /> <span class="shortcut">F</span>euerwehr verständigen</label>
+<% } %>
+</p>
+<p>
+<% if (pol_sent) { %>
+    <em>Polizei ist bereits verständigt.</em>
+<% } else { %>
+    <label><input<% if (pol_cars) print(" checked='checked'"); %> class="pol" shortcut="P" tabindex="<%=ti++%>" type="checkbox" /> <span class="shortcut">P</span>olizei verständigen</label>
+<% } %>
+</p>
+
+<p><strong>Zugeordnete Fahrzeuge:</strong></p>
+
+<div style="clear:both"></div>
+
+<div class="assigned_cars"></div>
+
+<br />
+<div style="float:left;margin-right:1em"><button class="dialog_ok" alarm="1" shortcut="A" tabindex="<%=ti++%>" style="font-size:0.9em;padding:0.3em"><%=button_text%><br />&amp; <span class="shortcut">a</span>larmieren</button></div>
+<div><button class="dialog_ok" tabindex="<%=ti++%>" style="font-size:0.9em"><%=button_text%></button></div>
+<div><button class="dialog_ok" alarm="1" assistance="1" tabindex="<%=ti++%>" style="font-size:0.9em"><%=button_text%>, alarmieren &amp; Unterstützung anfordern</button></div>
+</div>
+</script>
+<script type="text/html" id="tmpl_mission_edit_car_list">
+<div class="car_list">
+  <table>
+    <tr>
+      <th>Fahrzeug</th>
+      <th style="text-align:right">
+        <button<%=#(sort_by_distance ? " style=\"font-weight:bold\"" : "")%> type="button" class="toggle_airline">Luftlinie</button>
+      </th>
+      <th>
+        Filter:
+        <button<%=#(prioritize_type ? " style=\"font-weight:bold\"" : "")%> type="button" class="toggle_priority">
+          <%=#(prioritize_type ? prioritize_type : "kein")%>
+        </button>
+      </th>
+      <th style="padding:0 1em;text-align:right"><abbr title="Zeit bis zum Ende der Schicht">Dienstende</abbr></th>
+    </tr>
+<%
+
+for (var i = 0; i < cars.length; i++) {
+    var car = cars[i];
+    var classes = [];
+    
+    if (car.prioritized) {
+        classes.push("prioritized");
+    }
+    
+    if (car.selected) {
+        classes.push("selected");
+    }
+    
+    classes = classes.join(" ");
+    
+    var name_style = "";
+    
+    if (car.out_of_lst_area) {
+        name_style = "text-decoration:line-through";
+    }
+    
+    var type_style = "font-size:0.8em";
+    
+    if (car.has_doc) {
+        type_style += ";font-weight:bold";
+    } else if (!car.is_rtw) {
+        type_style += ";color:#999";
+    }
+    
+    %>
+    <tr car="<%=car.id%>" class="<%=classes%>">
+      <td>
+        <button<%=#(car.disabled ? " disabled='disabled'" : "")%> class="assign">
+          <div class="status_row status_<%=car.status%>">
+            <span class="status"><%=car.status%></span>
+          </div><span style="<%=name_style%>"><%=car.name%></span><%=#(car.on_island
+            ? " &nbsp;<img src=\"gfx/island.png\" title=\"Fahrzeugwache ist auf einer Insel\" />" : "")%><%=#(car.overtime
+            ? " &nbsp;<img src=\"gfx/clock_error.png\" alt=\"Dienstzeitüberschreitung\" title=\"Dienstzeitüberschreitung\" style=\"vertical-align:bottom\" />" : "")%></button>
+        <span class="cartype" style="<%=type_style%>" title="Fahrzeug in Einsatzliste auswählen"><%=car.type%></span>
+        
+        <%=#(car.command ? " › " + car.command : "")%>
+      </td>
+      <td style="text-align:right">
+        <%=# car.distance %> km
+      </td>
+      <td>
+        <%=#(car.selected ? "<strong>Zugeordnet</strong>" : "")%>
+      </td>
+      <%
+    if (car.remaining) {
+        if (car.has_overtime) {
+            print("<td style=\"color:#F00;font-size:0.8em;font-weight:bold;text-align:right\" title=\"Dienstende WAR um " + car.shiftend + " Uhr :)\" >" + car.remaining + " h</td>");
+        } else {
+            print("<td style=\"color:#999;font-size:0.8em;text-align:right\" title=\"Dienstende um " + car.shiftend + " Uhr\" >" + car.remaining + " h</td>");
+        }
+    }
+      %>
+    </tr>
+<%
+}
+%>
+  </table>
+</div>
+</script>
+<script type="text/html" id="tmpl_mission_feedback">
+<div id="mission_feedback_dialog">
+<p>Einsatzhäufigkeit (ggf. begründen):<br /><select id="frequency">
+  <%
+    for (var key in frequencies) {
+        print("<option value=\"" + key + "\""
+            + (frequency === key ? " selected=\"selected\"" : "")
+            + ">" + frequencies[key] + "</option>");
+    }
+  %>
+</select></p>
+
+<p>Kommentar:<br /><textarea id="comment" cols="50" rows="3"><%=comment%></textarea></p>
+
+<p>Worum geht es in deinem Kommentar?</p>
+<p>
+  <%
+    for (var key in feedback_types) {
+        print("<div><label><input type=\"checkbox\" class=\"feedback_type\" data-type=\"" + key + "\""
+            + (in_array(key, feedback_type) ? " checked=\"checked\"" : "")
+            + " />" + feedback_types[key] + "</label></div>");
+    }
+  %>
+</p>
+
+</div>
+</script>
+<script type="text/html" id="tmpl_mission_panel">
+<h4>
+<div class="header">
+<div class="type"><%
+    if (pick_up_time) {
+        if (due) {
+            print("<span style=\"color:red;cursor:help\" title=\"Abholzeit\">" + pick_up_time + "</span>");
+        } else {
+            print(pick_up_time);
+        }
+        
+        print(" | ");
+    }
+    
+    print(type);
+%></div>
+<div class="no"><%=no%></div>
+<div class="text" style="<%=style%>">
+    <%=#title%>
+</div>
+</div>
+</h4>
+    		
+<div class="content" mission="<%=missionno%>">
+<div class="realcontent">
+
+<div class="time"></div>
+<button action="alarm">Alarmieren</button><br />
+
+<div class="submenu">
+  <div class="item log" title="Einsatzprotokoll">P</div>
+  <%
+    if (username) { %>
+  <div class="item mission_feedback" title="Feedback zum Einsatz?">F</div>
+  <%
+    }
+  %>
+</div>
+
+<button action="edit">Einsatz bearbeiten</button><br />
+<button action="locate">Auf Karte zeigen</button><br />
+<button action="assistance">Unterstützung anfordern</button>
+<%=#details%>
+<div class="patients" style="margin-top:1em"></div>
+
+<%
+    if (additional_forces) {
+%>
+<div style="font-weight:bold;margin-top:1em">Zusätzlich benötigt:</div>
+<div><%=(pol_required == 1 ? "Polizeistreife" : pol_required + " Polizeistreifen")%></div>
+<%
+    }
+%>
+
+</div>
+</div>
+</script>
+<script type="text/html" id="tmpl_options_interval_time">
+<tr>
+  <td><input class="time" value="<%=# time %>" size="2" /></td>
+  <td><input class="ktp" value="<%=# ktp %>" size="2" /></td>
+  <td><input class="rtw" value="<%=# rtw %>" size="2" /></td>
+  <td><input class="naw" value="<%=# naw %>" size="2" /></td>
+  <td><input class="manv" value="<%=# manv %>" size="2" /></td>
+  <td><button class="remove_interval">−</button></td>
+</tr>
+</script>
+<script type="text/html" id="tmpl_options_intervals">
+<div id="intervals_tab">
+  <p>Alle Zahlen hier beziehen sich auf die Anzahl der Einsätze pro Stunde.</p>
+  
+  <table>
+    <thead>
+      <tr>
+        <th>Stunde</th>
+        <th>KTP</th>
+        <th>RTW</th>
+        <th>NAW</th>
+        <th>MANV</th>
+        <th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+  
+  <p>
+    <button class="new_interval">Neuer Zeitraum</button>
+    <button class="reset_intervals">Alle Intervalle zurücksetzen</button>
+  </p>
+</div>
+</script>
+<script type="text/html" id="tmpl_radiolog_command">
+<span class="car_name log_car_type log_car_type_<%=type%>" data-car="<%=id%>"><%=name%></span>:
+<span class="log_car_status log_car_status_<%=command%>"><%=command%></span>
+</script>
+<script type="text/html" id="tmpl_radiolog_status">
+<span class="car_name log_car_type log_car_type_<%=type%>" data-car="<%=id%>"><%=name%></span>:
+<span class="log_car_status log_car_status_<%=status%>">S<%=status%></span>
+</script>
+<script type="text/html" id="tmpl_station_label_compact">
+<div class="station_label_compact">
+<div class="name"><%=name%></div>
+<div class="cars">
+<%
+    var amounts = [];
+    
+    for (var type in types) {
+        amounts.push("<div class=\"car log_car_type_" + type + "\">" + types[type].length + "</div>");
+    }
+    
+    print(amounts.join(""));
+%>
+</div>
+</div>
+</script>
+<script type="text/html" id="tmpl_station_label_normal">
+<div class="station_label">
+  <div style="margin-bottom:0.5em">
+    <span style="font-weight:bold;text-decoration:underline"><%=name%></span>
+<%
+    if (leitstelle) {
+%>
+    <br />
+    <span style="color:#777"><%=# htmlspecialchars(leitstelle).replace(/ /g, "&nbsp;") %></span>
+<%
+    }
+%>
+  </div>
+  
+<%
+
+if (cars.length) {
+    var html = [];
+    
+    for (var i = 0; i < cars.length; i++) {
+        var classes = ["log_car_type_" + cars[i].type];
+        
+        if (!cars[i].available) {
+            classes.push("unavailable");
+        }
+        
+        html.push("<span class=\"" + classes.join(" ") + "\">" + htmlspecialchars(cars[i].name) + "</span>");
+    }
+    
+    print(html.join("<br />"));
+} else {
+    print("<em>Keine Fahrzeuge</em>");
+}
+
+%>  
+</div>
+</script>
+
+</body>
+</html>
