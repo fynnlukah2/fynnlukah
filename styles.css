@@ -63,7 +63,7 @@ body {
     width: 350px;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
     transition: transform 0.3s ease, box-shadow 0.3s ease;
-    z-index: 10; /* Stay above background shapes */
+    z-index: 10;
 }
 
 .card:hover {
@@ -92,7 +92,6 @@ body {
     object-fit: cover;
 }
 
-/* Text Design */
 h1, p {
     opacity: 0;
     animation: fadeIn 1.5s ease-in-out forwards;
@@ -119,7 +118,6 @@ p {
     }
 }
 
-/* Button Design */
 .buttons {
     display: flex;
     justify-content: center;
